@@ -1,7 +1,7 @@
 'use client';
 
 import axios from 'axios';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 
@@ -14,8 +14,7 @@ type Article = {
   source: { name: string };
 };
 
-export default function CategoryPage() {
-  // Read dynamic route and query params in a Client Component
+function CategoryPageInner() {
   const params = useParams<{ slug: string }>();
   const searchParams = useSearchParams();
 
@@ -24,12 +23,13 @@ export default function CategoryPage() {
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [bookmarkedUrls, setBookmarkedUrls] = useState<string[]>([]);
-  const [page, setPage] = useState<number>(() => Math.max(1, parseInt(pageParam, 10)));
+  const [page, setPage] = useState<number>(() => {
+    const n = parseInt(pageParam, 10);
+    return Number.isNaN(n) ? 1 : Math.max(1, n);
+  });
 
-  // Ensure this is defined in env and Vercel project settings
   const apiKey = process.env.NEXT_PUBLIC_NEWSAPI_KEY;
 
-  // Build the request URL once per dependency change
   const requestUrl = useMemo(() => {
     const u = new URL('https://newsapi.org/v2/top-headlines');
     u.searchParams.set('country', 'us');
@@ -52,7 +52,7 @@ export default function CategoryPage() {
       try {
         const { data } = await axios.get(requestUrl);
         if (!cancelled) {
-          setArticles(data.articles || []);
+          setArticles(Array.isArray(data.articles) ? data.articles : []);
         }
       } catch (error) {
         if (!cancelled) {
@@ -64,9 +64,12 @@ export default function CategoryPage() {
 
     fetchArticles();
 
-    // bookmarks
-    const stored = JSON.parse(localStorage.getItem('bookmarks') || '[]') as Article[];
-    setBookmarkedUrls(stored.map((a) => a.url));
+    try {
+      const stored = JSON.parse(localStorage.getItem('bookmarks') || '[]') as Article[];
+      setBookmarkedUrls(stored.map((a) => a.url));
+    } catch {
+      setBookmarkedUrls([]);
+    }
 
     return () => {
       cancelled = true;
@@ -75,13 +78,9 @@ export default function CategoryPage() {
 
   const toggleBookmark = (article: Article) => {
     const stored = JSON.parse(localStorage.getItem('bookmarks') || '[]') as Article[];
-    let updated: Article[];
-
-    if (bookmarkedUrls.includes(article.url)) {
-      updated = stored.filter((a) => a.url !== article.url);
-    } else {
-      updated = [...stored, article];
-    }
+    const updated = bookmarkedUrls.includes(article.url)
+      ? stored.filter((a) => a.url !== article.url)
+      : [...stored, article];
 
     localStorage.setItem('bookmarks', JSON.stringify(updated));
     setBookmarkedUrls(updated.map((a) => a.url));
@@ -127,7 +126,7 @@ export default function CategoryPage() {
                       height={400}
                       className="w-full h-40 object-cover rounded mb-3"
                       loading="lazy"
-                      // if external domains, configure next.config.js images.domains
+                      // If using the optimizer, configure next.config.js images.remotePatterns or images.domains
                       unoptimized
                     />
                   )}
@@ -158,7 +157,9 @@ export default function CategoryPage() {
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className={`px-3 py-1 rounded border ${
-                page <= 1 ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-200 dark:hover:bg-gray-700'
+                page <= 1
+                  ? 'opacity-50 pointer-events-none'
+                  : 'hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               Previous
@@ -174,5 +175,13 @@ export default function CategoryPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function CategoryPage() {
+  return (
+    <Suspense fallback={<div className="p-4">Loading...</div>}>
+      <CategoryPageInner />
+    </Suspense>
   );
 }
