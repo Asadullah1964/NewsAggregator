@@ -1,12 +1,9 @@
 'use client';
 
-import axios from "axios";
-import { useEffect, useState } from "react";
-
-type Params = {
-  params: { slug: string };
-  searchParams?: { page?: string };
-};
+import axios from 'axios';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 type Article = {
   title: string;
@@ -17,46 +14,77 @@ type Article = {
   source: { name: string };
 };
 
-export default function CategoryPage({ params, searchParams }: Params) {
-  const { slug } = params;
-  const pageParam = searchParams?.page ?? "1";
+export default function CategoryPage() {
+  // Read dynamic route and query params in a Client Component
+  const params = useParams<{ slug: string }>();
+  const searchParams = useSearchParams();
+
+  const slug = params.slug;
+  const pageParam = searchParams.get('page') ?? '1';
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [bookmarkedUrls, setBookmarkedUrls] = useState<string[]>([]);
-  const [page, setPage] = useState<number>(Math.max(1, parseInt(pageParam, 10)));
+  const [page, setPage] = useState<number>(() => Math.max(1, parseInt(pageParam, 10)));
 
+  // Ensure this is defined in env and Vercel project settings
   const apiKey = process.env.NEXT_PUBLIC_NEWSAPI_KEY;
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      const url = `https://newsapi.org/v2/top-headlines?country=us&category=${slug}&pageSize=10&page=${page}&apiKey=${apiKey}`;
+  // Build the request URL once per dependency change
+  const requestUrl = useMemo(() => {
+    const u = new URL('https://newsapi.org/v2/top-headlines');
+    u.searchParams.set('country', 'us');
+    u.searchParams.set('category', slug);
+    u.searchParams.set('pageSize', '10');
+    u.searchParams.set('page', String(page));
+    u.searchParams.set('apiKey', apiKey ?? '');
+    return u.toString();
+  }, [slug, page, apiKey]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchArticles = async () => {
+      if (!apiKey) {
+        console.error('Missing NEXT_PUBLIC_NEWSAPI_KEY');
+        setArticles([]);
+        return;
+      }
       try {
-        const { data } = await axios.get(url);
-        setArticles(data.articles || []);
+        const { data } = await axios.get(requestUrl);
+        if (!cancelled) {
+          setArticles(data.articles || []);
+        }
       } catch (error) {
-        console.error(`Failed to fetch news for category ${slug}:`, error);
+        if (!cancelled) {
+          console.error(`Failed to fetch news for category ${slug}:`, error);
+          setArticles([]);
+        }
       }
     };
 
     fetchArticles();
 
-    const stored = JSON.parse(localStorage.getItem("bookmarks") || "[]");
-    setBookmarkedUrls(stored.map((a: Article) => a.url));
-  }, [slug, page, apiKey]);
+    // bookmarks
+    const stored = JSON.parse(localStorage.getItem('bookmarks') || '[]') as Article[];
+    setBookmarkedUrls(stored.map((a) => a.url));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [requestUrl, slug, apiKey]);
 
   const toggleBookmark = (article: Article) => {
-    const stored = JSON.parse(localStorage.getItem("bookmarks") || "[]");
-    let updated;
+    const stored = JSON.parse(localStorage.getItem('bookmarks') || '[]') as Article[];
+    let updated: Article[];
 
     if (bookmarkedUrls.includes(article.url)) {
-      updated = stored.filter((a: Article) => a.url !== article.url);
+      updated = stored.filter((a) => a.url !== article.url);
     } else {
       updated = [...stored, article];
     }
 
-    localStorage.setItem("bookmarks", JSON.stringify(updated));
-    setBookmarkedUrls(updated.map((a: Article) => a.url));
+    localStorage.setItem('bookmarks', JSON.stringify(updated));
+    setBookmarkedUrls(updated.map((a) => a.url));
   };
 
   return (
@@ -81,22 +109,26 @@ export default function CategoryPage({ params, searchParams }: Params) {
                 >
                   <button
                     onClick={() => toggleBookmark(article)}
-                    aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+                    aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
                     className={`absolute top-3 right-3 p-1 rounded-full transition ${
                       isBookmarked
-                        ? "bg-yellow-400 text-white hover:bg-yellow-500"
-                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+                        ? 'bg-yellow-400 text-white hover:bg-yellow-500'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
                     }`}
                   >
-                    {isBookmarked ? "★" : "☆"}
+                    {isBookmarked ? '★' : '☆'}
                   </button>
 
                   {article.urlToImage && (
-                    <img
+                    <Image
                       src={article.urlToImage}
                       alt={article.title}
+                      width={800}
+                      height={400}
                       className="w-full h-40 object-cover rounded mb-3"
                       loading="lazy"
+                      // if external domains, configure next.config.js images.domains
+                      unoptimized
                     />
                   )}
 
@@ -113,24 +145,20 @@ export default function CategoryPage({ params, searchParams }: Params) {
                     {article.description}
                   </p>
                   <small className="text-gray-500 dark:text-gray-400">
-                    {article.source.name} •{" "}
-                    {article.publishedAt &&
-                      new Date(article.publishedAt).toLocaleString()}
+                    {article.source.name} •{' '}
+                    {article.publishedAt && new Date(article.publishedAt).toLocaleString()}
                   </small>
                 </li>
               );
             })}
           </ul>
 
-          {/* Pagination */}
           <div className="flex justify-center mt-8 space-x-3">
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               className={`px-3 py-1 rounded border ${
-                page <= 1
-                  ? "opacity-50 pointer-events-none"
-                  : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                page <= 1 ? 'opacity-50 pointer-events-none' : 'hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
             >
               Previous
