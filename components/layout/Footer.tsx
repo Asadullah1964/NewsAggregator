@@ -1,6 +1,7 @@
 'use client';
 
-import { FaTwitter, FaLinkedin, FaGithub, FaGlobe } from 'react-icons/fa';
+import Link from "next/link";
+import { FaTwitter, FaLinkedin, FaGithub, FaGlobe } from "react-icons/fa";
 
 export default function Footer() {
   return (
@@ -22,10 +23,10 @@ export default function Footer() {
         <div>
           <h3 className="text-lg font-semibold mb-3">Quick Links</h3>
           <ul className="space-y-2 text-sm">
-            <li><a href="/" className="hover:text-primary-500">Home</a></li>
-            <li><a href="/categories" className="hover:text-primary-500">Categories</a></li>
-            <li><a href="/bookmarks" className="hover:text-primary-500">Bookmarks</a></li>
-            <li><a href="/about" className="hover:text-primary-500">About</a></li>
+            <li><Link href="/" className="hover:text-primary-500">Home</Link></li>
+            <li><Link href="/categories" className="hover:text-primary-500">Categories</Link></li>
+            <li><Link href="/bookmarks" className="hover:text-primary-500">Bookmarks</Link></li>
+            <li><Link href="/about" className="hover:text-primary-500">About</Link></li>
           </ul>
         </div>
 
@@ -33,10 +34,10 @@ export default function Footer() {
         <div>
           <h3 className="text-lg font-semibold mb-3">Popular Categories</h3>
           <ul className="space-y-2 text-sm">
-            <li><a href="/news/business" className="hover:text-primary-500">Business</a></li>
-            <li><a href="/news/technology" className="hover:text-primary-500">Technology</a></li>
-            <li><a href="/news/sports" className="hover:text-primary-500">Sports</a></li>
-            <li><a href="/news/entertainment" className="hover:text-primary-500">Entertainment</a></li>
+            <li><Link href="/news/business" className="hover:text-primary-500">Business</Link></li>
+            <li><Link href="/news/technology" className="hover:text-primary-500">Technology</Link></li>
+            <li><Link href="/news/sports" className="hover:text-primary-500">Sports</Link></li>
+            <li><Link href="/news/entertainment" className="hover:text-primary-500">Entertainment</Link></li>
           </ul>
         </div>
 
@@ -44,17 +45,18 @@ export default function Footer() {
         <div>
           <h3 className="text-lg font-semibold mb-3">Connect With Us</h3>
           <div className="flex space-x-4 text-2xl">
-            <a href="#" className="hover:text-blue-500"><FaTwitter /></a>
-            <a href="#" className="hover:text-blue-700"><FaLinkedin /></a>
-            <a href="#" className="hover:text-gray-800 dark:hover:text-gray-100"><FaGithub /></a>
-            <a href="#" className="hover:text-green-500"><FaGlobe /></a>
+            <Link href="#" className="hover:text-blue-500"><FaTwitter /></Link>
+            <Link href="#" className="hover:text-blue-700"><FaLinkedin /></Link>
+            <Link href="#" className="hover:text-gray-800 dark:hover:text-gray-100"><FaGithub /></Link>
+            <Link href="#" className="hover:text-green-500"><FaGlobe /></Link>
           </div>
         </div>
       </div>
 
       {/* Copyright */}
       <div className="border-t dark:border-gray-700 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-        © {new Date().getFullYear()} <span className="font-semibold text-primary-600 dark:text-primary-400">NewsNest</span>. All rights reserved.
+        © {new Date().getFullYear()}{" "}
+        <span className="font-semibold text-primary-600 dark:text-primary-400">NewsNest</span>. All rights reserved.
       </div>
     </footer>
   );
