@@ -19,7 +19,7 @@ type Article = {
 
 export default function CategoryPage({ params, searchParams }: Params) {
   const { slug } = use(params);
-  const resolvedSearch = use(searchParams); // ✅ Properly unwrap searchParams
+  const resolvedSearch = searchParams; // ✅ fixed
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [bookmarkedUrls, setBookmarkedUrls] = useState<string[]>([]);
