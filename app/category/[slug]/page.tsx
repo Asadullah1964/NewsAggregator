@@ -1,11 +1,11 @@
 'use client';
 
 import axios from "axios";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Params = {
-  params: Promise<{ slug: string }>;
-  searchParams?: Promise<{ page?: string }>;
+  params: { slug: string };
+  searchParams?: { page?: string };
 };
 
 type Article = {
@@ -18,15 +18,12 @@ type Article = {
 };
 
 export default function CategoryPage({ params, searchParams }: Params) {
-  const { slug } = use(params);
-  const resolvedSearch = searchParams; // ✅ fixed
+  const { slug } = params;
+  const pageParam = searchParams?.page ?? "1";
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [bookmarkedUrls, setBookmarkedUrls] = useState<string[]>([]);
-
-  const [page, setPage] = useState<number>(
-    Math.max(1, parseInt(resolvedSearch?.page ?? "1", 10))
-  );
+  const [page, setPage] = useState<number>(Math.max(1, parseInt(pageParam, 10)));
 
   const apiKey = process.env.NEXT_PUBLIC_NEWSAPI_KEY;
 
@@ -46,7 +43,7 @@ export default function CategoryPage({ params, searchParams }: Params) {
 
     const stored = JSON.parse(localStorage.getItem("bookmarks") || "[]");
     setBookmarkedUrls(stored.map((a: Article) => a.url));
-  }, [slug, page]);
+  }, [slug, page, apiKey]);
 
   const toggleBookmark = (article: Article) => {
     const stored = JSON.parse(localStorage.getItem("bookmarks") || "[]");
