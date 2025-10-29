@@ -1,23 +1,31 @@
 // app/ClientLayout.tsx
-"use client";
+'use client';
 
-import React, { ReactNode, useState } from "react";
-import Header from "../components/layout/Header";
-import Sidebar from "../components/layout/Sidebar";
-import Footer from "../components/layout/Footer";
+import React, { ReactNode, useCallback, useState } from 'react';
+import Header from '../components/layout/Header';
+import Sidebar from '../components/layout/Sidebar';
+import Footer from '../components/layout/Footer';
 
-export default function ClientLayout({ children }: { children: ReactNode }) {
+type Props = {
+  children: ReactNode;
+};
+
+export default function ClientLayout({ children }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleSearchChange = (value: string) => {
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarOpen((v) => !v);
+  }, []);
+
+  const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
-  };
+  }, []);
 
   return (
     <>
       <Header
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onToggleSidebar={handleToggleSidebar}
         search={searchQuery}
         onSearchChange={handleSearchChange}
       />
